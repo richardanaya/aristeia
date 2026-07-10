@@ -1,0 +1,6 @@
+.claude/
+.DS_Store
+*.log
+assets/sprites/*.jpg
+assets/tiles/_*.jpg
+assets/sprites/_*.png

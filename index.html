@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aristeia: Rage of Diomedes</title>
+<style>
+  :root {
+    --ink: #e6dfd0;
+    --dim: #8a8170;
+    --panel: #0e1016;
+    --line: #2a2e38;
+    --red: #b83a2a;
+    --gold: #c9a24b;
+    --ki: #6db8d8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #05060a;
+    color: var(--ink);
+    font-family: Georgia, 'Times New Roman', serif;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #app { display: flex; height: 100vh; }
+  #cv {
+    flex: 1 1 0px;
+    min-width: 0;
+    min-height: 0;
+    height: 100%;
+    cursor: crosshair;
+    display: block;
+    touch-action: none;
+  }
+  #panel { flex: 0 0 300px; }
+  button { touch-action: manipulation; }
+
+  /* Portrait / narrow screens: board on top, compact panel below. */
+  @media (max-width: 820px), (max-height: 500px) and (orientation: landscape) {
+    #app { flex-direction: column; }
+    #cv { width: 100%; height: auto; flex: 1 1 0px; }
+    #panel {
+      flex: 0 0 auto;
+      width: 100%;
+      max-height: 46vh;
+      border-left: none;
+      border-top: 2px solid var(--red);
+      padding: 10px 12px;
+      gap: 8px;
+    }
+    #panel h1 { font-size: 16px; letter-spacing: 2px; display: inline; }
+    #panel .subtitle { display: none; }
+    .help { display: none; }
+    #layer { padding: 4px 0; font-size: 11px; }
+    .actions { grid-template-columns: repeat(4, 1fr); }
+    button { padding: 9px 4px; font-size: 11px; }
+    button kbd { display: none; }
+    #btn-new { grid-column: span 4; }
+    #log { min-height: 40px; max-height: 70px; }
+  }
+  #panel {
+    width: 300px;
+    background: var(--panel);
+    border-left: 1px solid var(--line);
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+  }
+  #panel > * { flex-shrink: 0; }
+  #panel > #log { flex: 1 1 60px; min-height: 40px; }
+  #panel h1 {
+    font-size: 22px;
+    letter-spacing: 4px;
+    color: var(--ink);
+    font-weight: normal;
+  }
+  #panel .subtitle {
+    color: var(--dim);
+    font-size: 12px;
+    font-style: italic;
+    margin-top: -4px;
+    letter-spacing: 1px;
+  }
+  #panel .actions button {
+    background: #14171f;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 7px 6px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  #panel .actions button:hover:not(:disabled) { border-color: var(--gold); color: #fff; }
+  #panel .actions button:disabled { opacity: 0.35; cursor: default; }
+  #panel .actions button.active { border-color: #e0a040; color: #e0a040; }
+  #layer {
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: var(--gold);
+    border-top: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    padding: 8px 0;
+  }
+  #layer.flight { color: #e06050; }
+  .statrow { font-size: 13px; color: var(--dim); }
+  #hearts .magatama { color: #3a2a2c; font-size: 18px; margin-right: 2px; }
+  #hearts .magatama.full { color: var(--red); text-shadow: 0 0 6px rgba(184,58,42,0.6); }
+  #hearts .memories { color: #5a5468; font-size: 11px; font-style: italic; }
+  .kiwrap {
+    background: #12151c;
+    border: 1px solid var(--line);
+    height: 14px;
+    position: relative;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  #kibar { background: linear-gradient(90deg, #2a6a8a, var(--ki)); height: 100%; transition: width .2s; }
+  #kitext {
+    position: absolute; inset: 0;
+    font-size: 10px; text-align: center; line-height: 14px;
+    color: #dff2fa; font-family: monospace;
+  }
+  .stance { font-size: 13px; letter-spacing: 1px; }
+  .stance.sheathed { color: var(--gold); }
+  .stance.drawn { color: #dfe6f2; }
+  #blades, #streak { font-size: 12px; color: var(--dim); }
+  #streak { color: var(--gold); }
+  #mode-banner { font-size: 11px; color: #e0a040; min-height: 14px; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  button {
+    background: #14171f;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 7px 6px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  button:hover:not(:disabled) { border-color: var(--gold); color: #fff; }
+  button:disabled { opacity: 0.35; cursor: default; }
+  button.active { border-color: #e0a040; color: #e0a040; }
+  button kbd {
+    float: right; color: var(--dim); font-size: 10px;
+    border: 1px solid var(--line); border-radius: 2px; padding: 0 3px;
+  }
+  #btn-new { grid-column: span 2; margin-top: 4px; }
+  /* Modal / end-screen buttons keep the same panel look */
+  .modal-box button {
+    background: #14171f;
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 8px 12px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 3px;
+  }
+  .modal-box button:hover { border-color: var(--gold); color: #fff; }
+  .modal-box .boon-card { width: 100%; text-align: left; }
+  .help { font-size: 11px; color: var(--dim); line-height: 1.5; border-top: 1px solid var(--line); padding-top: 8px; }
+  .help b { color: var(--ink); font-weight: normal; }
+  #log {
+    flex: 1;
+    min-height: 90px;
+    font-size: 11.5px;
+    color: #9a948a;
+    overflow-y: auto;
+    border-top: 1px solid var(--line);
+    padding-top: 8px;
+    line-height: 1.55;
+  }
+  #log div:last-child { color: var(--ink); }
+  .hidden { display: none !important; }
+  #modal, #overlay {
+    position: fixed; inset: 0;
+    background: rgba(3,4,8,0.82);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+  }
+  .modal-box {
+    background: var(--panel);
+    border: 1px solid var(--gold);
+    padding: 26px;
+    max-width: 460px;
+    width: 92%;
+  }
+  .modal-box h2 { font-weight: normal; letter-spacing: 2px; color: var(--gold); margin-bottom: 6px; }
+  .modal-sub { color: var(--dim); font-size: 12px; margin-bottom: 14px; }
+  .boons { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; }
+  .boon-card { text-align: left; padding: 10px 12px; display: block; }
+  .boon-card strong { display: block; color: var(--gold); font-weight: normal; letter-spacing: 1px; }
+  .boon-card span { display: block; font-size: 12px; color: var(--ink); margin-top: 3px; }
+  .boon-card .cost { display: block; font-size: 11px; color: #b06060; margin-top: 3px; }
+  .modal-box .seed { color: var(--dim); font-size: 11px; font-family: monospace; margin: 10px 0; }
+  .end p { font-size: 14px; line-height: 1.6; }
+
+  /* Title screen — quiet over key art / intro video */
+  #title-screen {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-end;
+    background: #05060a center/cover no-repeat;
+    background-image: url('assets/title/keyart.jpg');
+    cursor: pointer;
+  }
+  #title-screen.hidden { display: none !important; }
+  #title-screen video {
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover;
+    opacity: 1;
+    /* Solid dark fallback under the video so nothing shows through */
+    background: #05060a;
+  }
+  #title-screen .scrim {
+    position: absolute; inset: 0;
+    /* Only darken the bottom so title stays readable; video stays solid above */
+    background:
+      linear-gradient(to top, rgba(5,6,10,0.88) 0%, rgba(5,6,10,0.35) 32%, rgba(5,6,10,0.12) 58%, transparent 100%);
+    pointer-events: none;
+  }
+  #title-screen .title-copy {
+    position: relative; z-index: 1;
+    text-align: center;
+    padding: 0 28px 56px;
+    max-width: 420px;
+  }
+  #title-screen h1 {
+    font-size: clamp(18px, 3.2vw, 26px);
+    letter-spacing: 0.35em;
+    color: rgba(216, 210, 198, 0.88);
+    font-weight: normal;
+    text-shadow: 0 1px 18px rgba(0,0,0,0.55);
+  }
+  #title-screen .tag {
+    color: rgba(154, 148, 136, 0.85);
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    margin-top: 10px;
+    font-style: italic;
+    font-weight: normal;
+  }
+  #title-screen .title-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 22px;
+    flex-wrap: wrap;
+  }
+  #title-screen .title-actions button {
+    border: 1px solid rgba(154, 148, 136, 0.35);
+    color: rgba(216, 210, 198, 0.7);
+    padding: 8px 20px;
+    letter-spacing: 0.14em;
+    font-size: 11px;
+    font-family: inherit;
+    background: rgba(8, 10, 14, 0.45);
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  #title-screen .title-actions button:hover {
+    border-color: rgba(201, 162, 75, 0.55);
+    color: rgba(238, 232, 220, 0.95);
+    background: rgba(14, 16, 22, 0.65);
+  }
+  #title-help {
+    position: fixed; inset: 0; z-index: 25;
+    background: rgba(3,4,8,0.82);
+    display: flex; align-items: center; justify-content: center;
+  }
+  #title-help.hidden { display: none !important; }
+  #title-help .help-box {
+    background: var(--panel);
+    border: 1px solid rgba(154, 148, 136, 0.35);
+    padding: 22px 24px;
+    max-width: 440px;
+    width: 92%;
+    color: var(--ink);
+  }
+  #title-help .help-box h2 {
+    font-weight: normal;
+    letter-spacing: 0.12em;
+    font-size: 15px;
+    color: rgba(216, 210, 198, 0.9);
+    margin-bottom: 12px;
+  }
+  #title-help .help-box p {
+    font-size: 12.5px;
+    color: var(--dim);
+    line-height: 1.55;
+    margin-bottom: 10px;
+  }
+  #title-help .help-box p b { color: var(--ink); font-weight: normal; }
+  #title-help .help-box button {
+    margin-top: 8px;
+    border: 1px solid rgba(154, 148, 136, 0.35);
+    color: rgba(216, 210, 198, 0.85);
+    padding: 7px 16px;
+    font-family: inherit;
+    font-size: 12px;
+    background: #14171f;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  #title-help .help-box button:hover { border-color: var(--gold); color: #fff; }
+</style>
+</head>
+<body>
+<div id="title-screen">
+  <video id="title-video" src="assets/title/intro.mp4" muted loop playsinline autoplay></video>
+  <div class="scrim"></div>
+  <div class="title-copy">
+    <h1>ARISTEIA</h1>
+    <div class="tag">Rage of Diomedes</div>
+    <div class="title-actions">
+      <button type="button" id="title-start">Enter the Battlefield</button>
+      <button type="button" id="title-help-btn">Plead Gods for Help</button>
+    </div>
+  </div>
+</div>
+<div id="title-help" class="hidden">
+  <div class="help-box">
+    <h2>How to play</h2>
+    <p><b>Click</b> a tile to walk; two tiles away for Athena's leap (50 menos).</p>
+    <p>Moving <b>past</b> a foe cuts it; moving <b>straight at</b> one thrusts. Your first strike from a grounded spear sweeps an arc.</p>
+    <p><b>Ground</b> the spear to stagger neighbors. <b>Shield-bash</b> foes into planks on fire. <b>Guard</b> turns arrows home. <b>Libation</b> for ford guards. Pray at Athena's statue for blessings.</p>
+    <p>Descend eight ranks, wound Ares, take your kleos, and flee for the ships.</p>
+    <button type="button" id="title-help-close">Close</button>
+  </div>
+</div>
+<div id="app">
+  <canvas id="cv"></canvas>
+  <aside id="panel">
+    <div>
+      <h1>ARISTEIA</h1>
+      <div class="subtitle">Rage of Diomedes · reclaim your kleos</div>
+    </div>
+    <div id="layer"></div>
+    <div class="statrow" id="hearts"></div>
+    <div class="kiwrap"><div id="kibar"></div><div id="kitext"></div></div>
+    <div class="stance" id="stance"></div>
+    <div id="blades"></div>
+    <div id="streak"></div>
+    <div id="mode-banner"></div>
+    <div class="actions">
+      <button id="btn-sheathe">Ground <kbd>S</kbd></button>
+      <button id="btn-deflect">Guard <kbd>D</kbd></button>
+      <button id="btn-throw">Javelin <kbd>T</kbd></button>
+      <button id="btn-push">Bash <kbd>B</kbd></button>
+      <button id="btn-bow">Libation <kbd>O</kbd></button>
+      <button id="btn-pray">Sacrifice <kbd>R</kbd></button>
+      <button id="btn-wait">Wait <kbd>W</kbd></button>
+      <button id="btn-new">New Run <kbd>N</kbd></button>
+    </div>
+    <div class="help">
+      <b>Click</b> a tile to walk; 2 away for Athena's leap (50 menos).
+      Moving <b>past</b> a foe cuts it; moving <b>at</b> one thrusts.
+      Your first strike from a <b>grounded spear</b> sweeps an arc.
+      Grounding staggers everything beside you.
+      Click an adjacent foe to <b>shield-bash</b> (30 menos) — planks on fire are hungry.
+      <b>Libation</b> to a ford guard. <b>Guard</b> turns arrows home.
+      Wound Ares on rank 8, take your kleos, and climb for the ships.
+    </div>
+    <div id="log"></div>
+  </aside>
+</div>
+<div id="modal" class="hidden"></div>
+<div id="overlay" class="hidden"></div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
