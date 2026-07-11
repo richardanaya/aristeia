@@ -11,7 +11,10 @@ const ui = new UI(document);
 const renderer = new Renderer(canvas);
 const titleScreen = document.getElementById('title-screen');
 const titleVideo = document.getElementById('title-video');
+const backgroundMusic = document.getElementById('background-music');
 const TITLE_VIDEO_SRC = 'assets/title/intro.mp4';
+
+if (backgroundMusic) backgroundMusic.volume = 0.35;
 
 let game;
 let inputMode = 'move'; // 'move' | 'throw' | 'push' | 'libation'
@@ -74,6 +77,9 @@ function showTrainingHub(origin = started ? 'drill' : 'title') {
 }
 
 function leaveTitleForGame(startFn) {
+  if (backgroundMusic && backgroundMusic.paused) {
+    backgroundMusic.play().catch(() => {});
+  }
   if (!started) {
     started = true;
     if (titleHelp) titleHelp.classList.add('hidden');
