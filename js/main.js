@@ -14,7 +14,10 @@ const titleVideo = document.getElementById('title-video');
 const backgroundMusic = document.getElementById('background-music');
 const TITLE_VIDEO_SRC = 'assets/title/intro.mp4';
 
-if (backgroundMusic) backgroundMusic.volume = 0.35;
+if (backgroundMusic) {
+  backgroundMusic.volume = 0.35;
+  backgroundMusic.play().catch(() => {});
+}
 
 let game;
 let inputMode = 'move'; // 'move' | 'throw' | 'push' | 'libation'
