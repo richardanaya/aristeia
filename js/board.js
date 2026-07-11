@@ -4,11 +4,11 @@ import { key, neighbors, range } from './hex.js';
 
 export const T = {
   GROUND: 'ground',
-  CHASM: 'chasm',   // planks on fire — instant death, push target
+  BURNING_PLANKS: 'burning-planks',   // planks on fire — instant death, push target
   WATER: 'water',   // impassable to Diomedes; ford guards swim it; elite marksmen freeze it
   ICE: 'ice',       // frozen water, walkable for a few turns
   FIRE: 'fire',     // entering costs 1 resolve; foes avoid it, pushed in they die
-  GRAVE: 'grave',   // blocks movement and lines of fire; pitch-jars destroy it
+  STELE: 'stele',   // blocks movement and lines of fire; pitch-jars destroy it
 };
 
 export class Board {
@@ -53,17 +53,17 @@ export class Board {
   }
 
   // Walkability for foes. They shun watch-fire; ford guards also swim water.
-  yokaiWalkable(h, kind = null) {
+  foeWalkable(h, kind = null) {
     const t = this.terrain(h);
     if (t === T.GROUND || t === T.ICE) return true;
-    if (t === T.WATER && kind === 'kappa') return true;
+    if (t === T.WATER && kind === 'fordGuard') return true;
     return false;
   }
 
   // Does this tile block ranged attacks (arrows, beams)?
   blocksShots(h) {
     const t = this.terrain(h);
-    return t === undefined || t === T.GRAVE;
+    return t === undefined || t === T.STELE;
   }
 
   // BFS distance field from `start` over tiles passing `passFn`.

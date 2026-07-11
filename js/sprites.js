@@ -5,23 +5,23 @@
 import { getSprite, drawSpriteImage } from './assets.js';
 
 export const PAL = {
-  lacquer: '#0c0a0e',
-  sumi: '#1a1518',
-  shu: '#c23b2e',        // blood-red
-  shuDeep: '#8e2a1e',
-  kurenai: '#b8252f',    // crimson
-  kin: '#c9a24b',        // bronze-gold
-  kinLight: '#e8d090',
-  kinDark: '#8a6e2e',
-  ai: '#2a4a6b',         // Aegean indigo
-  aiDeep: '#152838',
+  black: '#0c0a0e',
+  charcoal: '#1a1518',
+  blood: '#c23b2e',        // blood-red
+  bloodDeep: '#8e2a1e',
+  crimson: '#b8252f',    // crimson
+  gold: '#c9a24b',        // bronze-gold
+  goldLight: '#e8d090',
+  goldDark: '#8a6e2e',
+  indigo: '#2a4a6b',         // Aegean indigo
+  indigoDeep: '#152838',
   silk: '#f0ebe0',       // linen / marble
   bone: '#e6ddc4',
-  murasaki: '#4a3048',   // wine-purple
-  moegi: '#5a7a3c',
-  kuchiba: '#b07a2e',    // ochre bronze
+  wine: '#4a3048',   // wine-purple
+  laurel: '#5a7a3c',
+  ochre: '#b07a2e',    // ochre bronze
   ice: '#cfe4ee',
-  onibi: '#9fd8e8',      // watch-fire / god-light
+  elitebi: '#9fd8e8',      // watch-fire / god-light
   bronze: '#a87840',
   bronzeDeep: '#6e4a22',
   flesh: '#c8a07a',
@@ -45,11 +45,11 @@ function shade(ctx, pathFn, s) {
 
 // ---------------------------------------------------------------- Diomedes
 
-export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
+export function drawPlayer(ctx, s, { spearGrounded, guarding, hasJavelin }, t) {
   const img = getSprite('player');
   if (img) {
     px(ctx, () => {
-      if (deflecting) {
+      if (guarding) {
         for (let i = 0; i < 3; i++) {
           const ph = ((t / 900) + i / 3) % 1;
           ctx.strokeStyle = `rgba(159,216,232,${(1 - ph) * 0.55})`;
@@ -61,7 +61,7 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
       }
       drawSpriteImage(ctx, img, s * 1.05);
       // Stance cue ring
-      ctx.strokeStyle = sheathed ? 'rgba(201,162,75,0.55)' : 'rgba(223,230,242,0.45)';
+      ctx.strokeStyle = spearGrounded ? 'rgba(201,162,75,0.55)' : 'rgba(223,230,242,0.45)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.arc(0, s * 0.55, s * 0.35, 0, Math.PI * 2);
@@ -70,7 +70,7 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
     return;
   }
   px(ctx, () => {
-    if (deflecting) {
+    if (guarding) {
       // Athena's aegis glow around the raised shield
       for (let i = 0; i < 3; i++) {
         const ph = ((t / 900) + i / 3) % 1;
@@ -83,7 +83,7 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
     }
 
     // greaves / greaved legs, dark bronze
-    ctx.fillStyle = PAL.aiDeep;
+    ctx.fillStyle = PAL.indigoDeep;
     ctx.beginPath();
     ctx.moveTo(-s * 0.38, s * 0.2);
     ctx.lineTo(-s * 0.46, s * 0.82);
@@ -110,7 +110,7 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
     };
     const cg = ctx.createLinearGradient(-s * 0.4, 0, s * 0.4, 0);
     cg.addColorStop(0, PAL.bronzeDeep);
-    cg.addColorStop(0.45, PAL.kin);
+    cg.addColorStop(0.45, PAL.gold);
     cg.addColorStop(1, PAL.bronzeDeep);
     ctx.fillStyle = cg;
     cuirass();
@@ -127,7 +127,7 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
     ctx.stroke();
 
     // crimson cloak over left shoulder
-    ctx.fillStyle = PAL.shuDeep;
+    ctx.fillStyle = PAL.bloodDeep;
     ctx.beginPath();
     ctx.moveTo(-s * 0.1, -s * 0.3);
     ctx.quadraticCurveTo(-s * 0.7, -s * 0.1, -s * 0.55, s * 0.55);
@@ -171,17 +171,17 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
     ctx.closePath();
     ctx.fill();
     // nose guard
-    ctx.fillStyle = PAL.kinDark;
+    ctx.fillStyle = PAL.goldDark;
     ctx.fillRect(-s * 0.03, -s * 0.48, s * 0.06, s * 0.2);
     // horsehair crest, vermillion
-    ctx.fillStyle = PAL.shu;
+    ctx.fillStyle = PAL.blood;
     ctx.beginPath();
     ctx.moveTo(-s * 0.06, -s * 0.62);
     ctx.quadraticCurveTo(0, -s * 1.05, s * 0.06, -s * 0.62);
     ctx.quadraticCurveTo(0, -s * 0.72, -s * 0.06, -s * 0.62);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = PAL.shuDeep;
+    ctx.strokeStyle = PAL.bloodDeep;
     ctx.lineWidth = 0.8;
     for (let i = 0; i < 4; i++) {
       ctx.beginPath();
@@ -191,7 +191,7 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
     }
 
     // the dory (spear)
-    if (sheathed) {
+    if (spearGrounded) {
       // grounded: butt planted, tip up beside him
       ctx.strokeStyle = '#5a3a1a';
       ctx.lineWidth = 2.4;
@@ -200,7 +200,7 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
       ctx.lineTo(s * 0.52, -s * 0.7);
       ctx.stroke();
       // bronze spearhead
-      ctx.fillStyle = PAL.kinLight;
+      ctx.fillStyle = PAL.goldLight;
       ctx.beginPath();
       ctx.moveTo(s * 0.52, -s * 0.7);
       ctx.lineTo(s * 0.46, -s * 0.5);
@@ -216,7 +216,7 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
       const bg = ctx.createLinearGradient(s * 0.15, s * 0.1, s * 0.9, -s * 0.95);
       bg.addColorStop(0, '#6a4a28');
       bg.addColorStop(0.7, '#8a6230');
-      bg.addColorStop(1, PAL.kinLight);
+      bg.addColorStop(1, PAL.goldLight);
       ctx.strokeStyle = bg;
       ctx.lineWidth = 2.6;
       ctx.beginPath();
@@ -232,7 +232,7 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
       ctx.closePath();
       ctx.fill();
       // grip wrap
-      ctx.strokeStyle = PAL.shu;
+      ctx.strokeStyle = PAL.blood;
       ctx.lineWidth = 2.2;
       ctx.beginPath();
       ctx.moveTo(s * 0.22, s * 0.08);
@@ -241,23 +241,23 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
     }
 
     // aspis (round shield) on left arm when guarding or always faintly
-    if (deflecting || !sheathed) {
+    if (guarding || !spearGrounded) {
       const sx = -s * 0.48, sy = s * 0.05;
       const rg = ctx.createRadialGradient(sx - s * 0.05, sy - s * 0.05, 1, sx, sy, s * 0.38);
-      rg.addColorStop(0, PAL.kinLight);
+      rg.addColorStop(0, PAL.goldLight);
       rg.addColorStop(0.5, PAL.bronze);
       rg.addColorStop(1, PAL.bronzeDeep);
       ctx.fillStyle = rg;
       ctx.beginPath();
       ctx.arc(sx, sy, s * 0.36, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = PAL.kinDark;
+      ctx.strokeStyle = PAL.goldDark;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(sx, sy, s * 0.36, 0, Math.PI * 2);
       ctx.stroke();
       // blazon: simple gorgoneion-like eye / owl of Athena
-      ctx.fillStyle = PAL.shuDeep;
+      ctx.fillStyle = PAL.bloodDeep;
       ctx.beginPath();
       ctx.arc(sx, sy, s * 0.12, 0, Math.PI * 2);
       ctx.fill();
@@ -278,14 +278,14 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
     }
 
     // javelin tucked when held
-    if (hasWakizashi) {
+    if (hasJavelin) {
       ctx.strokeStyle = '#5a3a1a';
       ctx.lineWidth = 1.8;
       ctx.beginPath();
       ctx.moveTo(s * 0.4, s * 0.3);
       ctx.lineTo(-s * 0.05, s * 0.48);
       ctx.stroke();
-      ctx.fillStyle = PAL.kinLight;
+      ctx.fillStyle = PAL.goldLight;
       ctx.beginPath();
       ctx.moveTo(-s * 0.05, s * 0.48);
       ctx.lineTo(-s * 0.12, s * 0.44);
@@ -298,9 +298,9 @@ export function drawRonin(ctx, s, { sheathed, deflecting, hasWakizashi }, t) {
 
 // ---------------------------------------------------------------- foes of Troy (soldiers & elites)
 
-const YOKAI_PAINTERS = {
+const FOE_PAINTERS = {
   // Trojan Elite — heavy infantry, enrages when bashed
-  oni(ctx, s, y, t) {
+  elite(ctx, s, y, t) {
     if (y.enraged) {
       ctx.strokeStyle = `rgba(255,80,40,${0.35 + 0.25 * Math.sin(t / 120)})`;
       ctx.lineWidth = 2;
@@ -325,7 +325,7 @@ const YOKAI_PAINTERS = {
     body();
     ctx.fill();
     shade(ctx, body, s);
-    ctx.strokeStyle = PAL.kinDark;
+    ctx.strokeStyle = PAL.goldDark;
     ctx.lineWidth = 1;
     for (let i = 0; i < 4; i++) {
       ctx.beginPath();
@@ -351,7 +351,7 @@ const YOKAI_PAINTERS = {
     ctx.beginPath();
     ctx.ellipse(0, -s * 0.38, s * 0.24, s * 0.16, 0, Math.PI, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = PAL.shu;
+    ctx.fillStyle = PAL.blood;
     ctx.beginPath();
     ctx.moveTo(-s * 0.04, -s * 0.48);
     ctx.quadraticCurveTo(0, -s * 0.95, s * 0.04, -s * 0.48);
@@ -372,7 +372,7 @@ const YOKAI_PAINTERS = {
     ctx.moveTo(s * 0.28, s * 0.5);
     ctx.lineTo(s * 0.72, -s * 0.7);
     ctx.stroke();
-    ctx.fillStyle = PAL.kinLight;
+    ctx.fillStyle = PAL.goldLight;
     ctx.beginPath();
     ctx.moveTo(s * 0.72, -s * 0.7);
     ctx.lineTo(s * 0.64, -s * 0.5);
@@ -385,12 +385,12 @@ const YOKAI_PAINTERS = {
     ctx.beginPath();
     ctx.arc(sx, sy, s * 0.28, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = PAL.kin;
+    ctx.strokeStyle = PAL.gold;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.arc(sx, sy, s * 0.28, 0, Math.PI * 2);
     ctx.stroke();
-    ctx.fillStyle = PAL.shuDeep;
+    ctx.fillStyle = PAL.bloodDeep;
     ctx.beginPath();
     ctx.arc(sx, sy, s * 0.1, 0, Math.PI * 2);
     ctx.fill();
@@ -464,7 +464,7 @@ const YOKAI_PAINTERS = {
     // quiver
     ctx.fillStyle = '#3a2818';
     ctx.fillRect(-s * 0.42, s * 0.05, s * 0.1, s * 0.35);
-    ctx.strokeStyle = PAL.kinDark;
+    ctx.strokeStyle = PAL.goldDark;
     ctx.lineWidth = 0.8;
     for (let i = 0; i < 3; i++) {
       ctx.beginPath();
@@ -475,8 +475,8 @@ const YOKAI_PAINTERS = {
   },
 
   // Elite Marksman — heavier archer, silver volley beam
-  yukionna(ctx, s, y, t) {
-    // long composite bow
+  marksman(ctx, s, y, t) {
+    // long composite libation
     ctx.strokeStyle = '#5a3a20';
     ctx.lineWidth = 2.4;
     ctx.beginPath();
@@ -516,7 +516,7 @@ const YOKAI_PAINTERS = {
     body();
     ctx.fill();
     shade(ctx, body, s);
-    ctx.strokeStyle = PAL.kin;
+    ctx.strokeStyle = PAL.gold;
     ctx.lineWidth = 0.9;
     for (let i = 0; i < 3; i++) {
       ctx.beginPath();
@@ -561,7 +561,7 @@ const YOKAI_PAINTERS = {
   },
 
   // Trojan Sapper — pitch-jar specialist
-  tanuki(ctx, s, y, t) {
+  sapper(ctx, s, y, t) {
     const body = () => {
       ctx.beginPath();
       ctx.moveTo(-s * 0.32, -s * 0.05);
@@ -583,7 +583,7 @@ const YOKAI_PAINTERS = {
     ctx.lineTo(-s * 0.22, s * 0.62);
     ctx.closePath();
     ctx.fill();
-    ctx.strokeStyle = PAL.kinDark;
+    ctx.strokeStyle = PAL.goldDark;
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.moveTo(-s * 0.2, -s * 0.02);
@@ -624,11 +624,11 @@ const YOKAI_PAINTERS = {
     ctx.beginPath();
     ctx.arc(-s * 0.52, -s * 0.4 - fl * 2, s * 0.18, 0, Math.PI * 2);
     ctx.fill();
-    drawGourd(ctx, s * 0.38, { x: s * 0.38, y: s * 0.18 }, t);
+    drawPitchJar(ctx, s * 0.38, { x: s * 0.38, y: s * 0.18 }, t);
   },
 
   // Trojan Scout — light elite, leaps when charged
-  tengu(ctx, s, y, t) {
+  scout(ctx, s, y, t) {
     // short cloak (motion)
     ctx.fillStyle = '#3a2830';
     for (const side of [-1, 1]) {
@@ -671,7 +671,7 @@ const YOKAI_PAINTERS = {
     ctx.beginPath();
     ctx.ellipse(0, -s * 0.42, s * 0.18, s * 0.1, 0, Math.PI, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = PAL.shu;
+    ctx.fillStyle = PAL.blood;
     ctx.beginPath();
     ctx.moveTo(0, -s * 0.48);
     ctx.lineTo(s * 0.03, -s * 0.72);
@@ -688,7 +688,7 @@ const YOKAI_PAINTERS = {
     ctx.moveTo(s * 0.22, s * 0.25);
     ctx.lineTo(s * 0.55, -s * 0.4);
     ctx.stroke();
-    ctx.fillStyle = PAL.kinLight;
+    ctx.fillStyle = PAL.goldLight;
     ctx.beginPath();
     ctx.moveTo(s * 0.55, -s * 0.4);
     ctx.lineTo(s * 0.48, -s * 0.26);
@@ -700,7 +700,7 @@ const YOKAI_PAINTERS = {
     ctx.beginPath();
     ctx.arc(-s * 0.38, s * 0.05, s * 0.18, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = PAL.kin;
+    ctx.strokeStyle = PAL.gold;
     ctx.lineWidth = 1.2;
     ctx.beginPath();
     ctx.arc(-s * 0.38, s * 0.05, s * 0.18, 0, Math.PI * 2);
@@ -715,7 +715,7 @@ const YOKAI_PAINTERS = {
   },
 
   // Ford Guard — river-trained infantry (slow on land, swims)
-  kappa(ctx, s, y, t) {
+  fordGuard(ctx, s, y, t) {
     // wet cloak / dark tunic
     const body = () => {
       ctx.beginPath();
@@ -763,7 +763,7 @@ const YOKAI_PAINTERS = {
     ctx.moveTo(s * 0.28, s * 0.4);
     ctx.lineTo(s * 0.55, -s * 0.45);
     ctx.stroke();
-    ctx.fillStyle = PAL.kinLight;
+    ctx.fillStyle = PAL.goldLight;
     ctx.beginPath();
     ctx.moveTo(s * 0.55, -s * 0.45);
     ctx.lineTo(s * 0.48, -s * 0.3);
@@ -794,7 +794,7 @@ const YOKAI_PAINTERS = {
   },
 
   // Pursuit Troop — flight-only chasing infantry
-  shikome(ctx, s, y, t) {
+  pursuitTroop(ctx, s, y, t) {
     // worn red-brown cloak, torn edges
     const robe = () => {
       ctx.beginPath();
@@ -854,7 +854,7 @@ const YOKAI_PAINTERS = {
     ctx.moveTo(s * 0.35, s * 0.2);
     ctx.lineTo(s * 0.65, -s * 0.25);
     ctx.stroke();
-    ctx.fillStyle = PAL.kinLight;
+    ctx.fillStyle = PAL.goldLight;
     ctx.beginPath();
     ctx.moveTo(s * 0.65, -s * 0.25);
     ctx.lineTo(s * 0.58, -s * 0.12);
@@ -865,8 +865,8 @@ const YOKAI_PAINTERS = {
 };
 
 // Ares — the war god, towering bronze and blood. Drawn across a 7-tile footprint.
-export function drawGashadokuro(ctx, s, boss, t) {
-  const img = getSprite('gashadokuro');
+export function drawAres(ctx, s, boss, t) {
+  const img = getSprite('ares');
   if (img) {
     px(ctx, () => {
       const bob = Math.sin(t / 700) * s * 0.05;
@@ -891,14 +891,14 @@ export function drawGashadokuro(ctx, s, boss, t) {
     // bronze breastplate gleam
     const bg = ctx.createLinearGradient(-S * 0.4, 0, S * 0.4, 0);
     bg.addColorStop(0, PAL.bronzeDeep);
-    bg.addColorStop(0.5, PAL.kin);
+    bg.addColorStop(0.5, PAL.gold);
     bg.addColorStop(1, PAL.bronzeDeep);
     ctx.fillStyle = bg;
     ctx.beginPath();
     ctx.ellipse(0, S * 0.35, S * 0.42, S * 0.28, 0, 0, Math.PI * 2);
     ctx.fill();
     // helm crest rising high
-    ctx.fillStyle = PAL.shu;
+    ctx.fillStyle = PAL.blood;
     ctx.beginPath();
     ctx.moveTo(-S * 0.08, -S * 0.55);
     ctx.quadraticCurveTo(0, -S * 1.15, S * 0.08, -S * 0.55);
@@ -906,7 +906,7 @@ export function drawGashadokuro(ctx, s, boss, t) {
     ctx.fill();
     // massive helm / head
     const sg = ctx.createRadialGradient(-S * 0.1, -S * 0.2, S * 0.05, 0, -S * 0.05, S * 0.5);
-    sg.addColorStop(0, PAL.kinLight);
+    sg.addColorStop(0, PAL.goldLight);
     sg.addColorStop(1, PAL.bronzeDeep);
     ctx.fillStyle = sg;
     ctx.beginPath();
@@ -937,7 +937,7 @@ export function drawGashadokuro(ctx, s, boss, t) {
       ctx.fill();
     }
     // beard of bronze wire
-    ctx.strokeStyle = PAL.kinDark;
+    ctx.strokeStyle = PAL.goldDark;
     ctx.lineWidth = 2;
     for (let i = -3; i <= 3; i++) {
       ctx.beginPath();
@@ -952,7 +952,7 @@ export function drawGashadokuro(ctx, s, boss, t) {
     ctx.moveTo(S * 0.45, S * 0.6);
     ctx.lineTo(S * 0.7, -S * 0.7);
     ctx.stroke();
-    ctx.fillStyle = PAL.kinLight;
+    ctx.fillStyle = PAL.goldLight;
     ctx.beginPath();
     ctx.moveTo(S * 0.7, -S * 0.7);
     ctx.lineTo(S * 0.6, -S * 0.45);
@@ -962,13 +962,13 @@ export function drawGashadokuro(ctx, s, boss, t) {
   });
 }
 
-export function drawYokai(ctx, size, y, t) {
+export function drawFoe(ctx, size, y, t) {
   const img = getSprite(y.kind);
   px(ctx, () => {
-    const dim = y.staggered > 0 && y.kind !== 'kappa' ? 0.7 : 1;
+    const dim = y.staggered > 0 && y.kind !== 'fordGuard' ? 0.7 : 1;
     if (img) {
       drawSpriteImage(ctx, img, size * 1.05, { alpha: dim });
-      if (y.kind === 'oni' && y.enraged) {
+      if (y.kind === 'elite' && y.enraged) {
         ctx.strokeStyle = `rgba(255,80,40,${0.35 + 0.25 * Math.sin(t / 120)})`;
         ctx.lineWidth = 2;
         for (let i = 0; i < 4; i++) {
@@ -979,7 +979,7 @@ export function drawYokai(ctx, size, y, t) {
           ctx.stroke();
         }
       }
-      if (y.kind === 'tengu' && y.charge >= 3) {
+      if (y.kind === 'scout' && y.charge >= 3) {
         ctx.strokeStyle = `rgba(216,178,92,${0.5 + 0.3 * Math.sin(t / 180)})`;
         ctx.lineWidth = 1.4;
         ctx.beginPath();
@@ -987,14 +987,14 @@ export function drawYokai(ctx, size, y, t) {
         ctx.stroke();
       }
     } else {
-      const painter = YOKAI_PAINTERS[y.kind];
+      const painter = FOE_PAINTERS[y.kind];
       if (!painter) return;
       if (dim < 1) ctx.globalAlpha = dim;
       painter(ctx, size, y, t);
     }
     if (y.staggered > 0) {
       ctx.globalAlpha = 1;
-      ctx.fillStyle = PAL.kin;
+      ctx.fillStyle = PAL.gold;
       for (let i = 0; i < 3; i++) {
         const a = t / 250 + i * 2.1;
         ctx.beginPath();
@@ -1007,7 +1007,7 @@ export function drawYokai(ctx, size, y, t) {
 
 // ---------------------------------------------------------------- items
 
-export function drawGourd(ctx, s, offset = { x: 0, y: 0 }, t = 0) {
+export function drawPitchJar(ctx, s, offset = { x: 0, y: 0 }, t = 0) {
   // Pitch-jar / oil flask with fuse
   px(ctx, () => {
     ctx.translate(offset.x, offset.y);
@@ -1054,7 +1054,7 @@ export function drawGourd(ctx, s, offset = { x: 0, y: 0 }, t = 0) {
   });
 }
 
-export function drawWakizashi(ctx, s, t) {
+export function drawJavelin(ctx, s, t) {
   // Javelin on the ground
   px(ctx, () => {
     ctx.rotate(-0.55);
@@ -1067,7 +1067,7 @@ export function drawWakizashi(ctx, s, t) {
     ctx.lineWidth = 2.2;
     ctx.beginPath(); ctx.moveTo(-s * 0.38, 0); ctx.lineTo(s * 0.28, 0); ctx.stroke();
     // bronze head
-    ctx.fillStyle = PAL.kinLight;
+    ctx.fillStyle = PAL.goldLight;
     ctx.beginPath();
     ctx.moveTo(s * 0.28, 0);
     ctx.lineTo(s * 0.45, -s * 0.05);
@@ -1075,7 +1075,7 @@ export function drawWakizashi(ctx, s, t) {
     ctx.closePath();
     ctx.fill();
     // binding
-    ctx.strokeStyle = PAL.shu;
+    ctx.strokeStyle = PAL.blood;
     ctx.lineWidth = 1.4;
     ctx.beginPath(); ctx.moveTo(s * 0.2, -1.5); ctx.lineTo(s * 0.28, -1.5);
     ctx.moveTo(s * 0.2, 1.5); ctx.lineTo(s * 0.28, 1.5);
@@ -1083,10 +1083,10 @@ export function drawWakizashi(ctx, s, t) {
   });
 }
 
-export function drawShrine(ctx, s, t) {
+export function drawAthenaStatue(ctx, s, t) {
   // Statue of Athena — Imagine prop, procedural fallback
   px(ctx, () => {
-    const img = getSprite('shrine');
+    const img = getSprite('athenaStatue');
     if (img) {
       // Standing statue planted on the hex
       drawSpriteImage(ctx, img, s * 1.25, { feet: true });
@@ -1130,9 +1130,9 @@ export function drawShrine(ctx, s, t) {
   });
 }
 
-export function drawGate(ctx, s, { active, up }, t) {
+export function drawExitMap(ctx, s, { active, up }, t) {
   px(ctx, () => {
-    const img = getSprite(up ? 'gate_up' : 'gate_down');
+    const img = getSprite(up ? 'exitMap_up' : 'exitMap_down');
     const dim = active ? 1 : 0.35;
     ctx.globalAlpha = dim;
     if (img) {
@@ -1171,7 +1171,7 @@ export function drawGate(ctx, s, { active, up }, t) {
   });
 }
 
-export function drawName(ctx, s, t) {
+export function drawKleos(ctx, s, t) {
   // Kleos — a gleaming laurel wreath / name-tablet
   px(ctx, () => {
     const pulse = 0.5 + 0.5 * Math.sin(t / 350);
@@ -1200,7 +1200,7 @@ export function drawName(ctx, s, t) {
     ctx.moveTo(s * 0.16, -s * 0.08); ctx.lineTo(s * 0.16, s * 0.1);
     ctx.stroke();
     // laurel leaf accent
-    ctx.fillStyle = PAL.moegi;
+    ctx.fillStyle = PAL.laurel;
     ctx.beginPath();
     ctx.ellipse(-s * 0.02, -s * 0.28, s * 0.08, s * 0.03, -0.4, 0, Math.PI * 2);
     ctx.fill();

@@ -5,8 +5,8 @@
 import { dist, toPixel, fromPixel } from './hex.js';
 import { T } from './board.js';
 import {
-  PAL, drawRonin, drawYokai, drawGashadokuro, drawGourd,
-  drawWakizashi, drawShrine, drawGate, drawName,
+  PAL, drawPlayer, drawFoe, drawAres, drawPitchJar,
+  drawJavelin, drawAthenaStatue, drawExitMap, drawKleos,
 } from './sprites.js';
 import { getTile, getBg, drawTileImage } from './assets.js';
 
@@ -70,17 +70,17 @@ export class Renderer {
     for (const e of events) {
       switch (e.type) {
         case 'kill': this.fx.push({ ...e, t0: now, dur: 420 }); break;
-        case 'iai': this.fx.push({ ...e, t0: now, dur: 380 }); break;
+        case 'spear-sweep': this.fx.push({ ...e, t0: now, dur: 380 }); break;
         case 'shot': case 'melee': this.fx.push({ ...e, t0: now, dur: 300 }); break;
         case 'beam': this.fx.push({ ...e, t0: now, dur: 500 }); break;
         case 'explode': this.fx.push({ ...e, t0: now, dur: 550 }); break;
         case 'damage': this.fx.push({ ...e, t0: now, dur: 700, text: '-1' }); break;
-        case 'stagger': case 'bow': this.fx.push({ ...e, t0: now, dur: 500 }); break;
-        case 'zanshin': case 'pickup': case 'name-drop': case 'boon':
+        case 'stagger': case 'libation': this.fx.push({ ...e, t0: now, dur: 500 }); break;
+        case 'aristeia-boon': case 'pickup': case 'kleos-drop': case 'boon':
           this.fx.push({ ...e, t0: now, dur: 800 }); break;
         case 'spawn': this.fx.push({ ...e, t0: now, dur: 600 }); break;
         case 'lob': this.fx.push({ ...e, t0: now, dur: 400 }); break;
-        case 'layer': this.smooth.clear(); this.fx = []; break;
+        case 'rank': this.smooth.clear(); this.fx = []; break;
         default: break;
       }
     }
@@ -121,10 +121,15 @@ export class Renderer {
     this.drawFx(t);
   }
 
-  // Always show where Diomedes can walk / leap (Hoplite-style opportunity map).
+  // Always show where Diomedes can walk / leap (Hoplite-style opportunity map),
+  // or javelin range + hit targets when throwing.
   drawMoveHints() {
     const { ctx, game } = this;
     if (!game || game.over || game.won || game.pendingOffer) return;
+    if (this.mode === 'throw') {
+      this.drawThrowHints();
+      return;
+    }
     if (this.mode !== 'move') return;
     // Dim hints when inspecting an enemy's threat range.
     const inspectingThreat = this.hover?.threat?.length;
@@ -150,6 +155,42 @@ export class Renderer {
           ? 'rgba(238,213,140,0.18)'
           : 'rgba(238,213,140,0.4)';
         ctx.lineWidth = 1.1;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Javelin mode: soft range envelope + hard highlight on legal hits.
+  drawThrowHints() {
+    const { ctx, game } = this;
+    if (!game.player.hasJavelin) return;
+    const S = this.hex;
+    const targets = new Set(
+      game.legalThrows().map((t) => `${t.to.q},${t.to.r}`),
+    );
+    for (const h of game.throwRangeTiles()) {
+      const { x, y } = this.hexToScreen(h);
+      const key = `${h.q},${h.r}`;
+      const isHit = targets.has(key);
+      this.hexPath(x, y, S * 0.92);
+      if (isHit) {
+        ctx.fillStyle = 'rgba(208,71,47,0.22)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(208,71,47,0.75)';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+        // Kill mark so the target reads as a throw, not a walk.
+        ctx.strokeStyle = 'rgba(208,71,47,0.9)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x - 6, y - 6); ctx.lineTo(x + 6, y + 6);
+        ctx.moveTo(x + 6, y - 6); ctx.lineTo(x - 6, y + 6);
+        ctx.stroke();
+      } else {
+        ctx.fillStyle = 'rgba(180,120,70,0.1)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(180,120,70,0.32)';
+        ctx.lineWidth = 1;
         ctx.stroke();
       }
     }
@@ -226,14 +267,14 @@ export class Renderer {
       ctx.save();
       this.hexPath(x, y);
       ctx.clip();
-      ctx.fillStyle = terr === T.CHASM || terr === T.FIRE ? '#c04010'
+      ctx.fillStyle = terr === T.BURNING_PLANKS || terr === T.FIRE ? '#c04010'
         : terr === T.WATER ? '#0a1c2a'
         : terr === T.ICE ? '#9dbfd2'
-        : terr === T.GRAVE ? '#2a2c30'
+        : terr === T.STELE ? '#2a2c30'
         : '#3a3028';
       ctx.fill();
       // Fiery surface: seamless texture, panned per hex so tiles vary
-      const isFire = terr === T.CHASM || terr === T.FIRE;
+      const isFire = terr === T.BURNING_PLANKS || terr === T.FIRE;
       drawTileImage(ctx, tileImg, x, y, S, hash, {
         jitter: !isFire,
         pan: isFire,
@@ -282,7 +323,7 @@ export class Renderer {
         ctx.stroke();
         break;
       }
-      case T.CHASM:
+      case T.BURNING_PLANKS:
       case T.FIRE: {
         // Full fiery tile fallback
         const g = ctx.createRadialGradient(x, y, 1, x, y, S);
@@ -308,7 +349,7 @@ export class Renderer {
         ctx.fill();
         break;
       }
-      case T.GRAVE: {
+      case T.STELE: {
         ctx.fillStyle = '#2a2c30';
         ctx.fill();
         ctx.fillStyle = '#6a6860';
@@ -322,44 +363,44 @@ export class Renderer {
   drawFeatures(t) {
     const { ctx, game } = this;
     const S = this.hex;
-    if (game.gatePos) {
-      const { x, y } = this.hexToScreen(game.gatePos);
+    if (game.exitMapPos) {
+      const { x, y } = this.hexToScreen(game.exitMapPos);
       ctx.save();
       ctx.translate(x, y);
-      drawGate(ctx, S, { active: game.gateActive(), up: game.mode === 'flight' }, t);
+      drawExitMap(ctx, S, { active: game.exitMapActive(), up: game.mode === 'flight' }, t);
       ctx.restore();
     }
-    if (game.shrinePos) {
-      const { x, y } = this.hexToScreen(game.shrinePos);
+    if (game.athenaStatuePos) {
+      const { x, y } = this.hexToScreen(game.athenaStatuePos);
       ctx.save();
       ctx.translate(x, y);
-      drawShrine(ctx, S, t);
+      drawAthenaStatue(ctx, S, t);
       ctx.restore();
-      if (!game.shrineUsed && dist(game.player.pos, game.shrinePos) === 1) {
+      if (!game.athenaStatueUsed && dist(game.player.pos, game.athenaStatuePos) === 1) {
         this.hexPath(x, y);
         ctx.strokeStyle = `rgba(238,213,140,${0.35 + 0.2 * Math.sin(t / 300)})`;
         ctx.lineWidth = 2;
         ctx.stroke();
       }
     }
-    if (game.wakizashiPos) {
-      const { x, y } = this.hexToScreen(game.wakizashiPos);
-      ctx.save(); ctx.translate(x, y); drawWakizashi(ctx, S, t); ctx.restore();
+    if (game.javelinPos) {
+      const { x, y } = this.hexToScreen(game.javelinPos);
+      ctx.save(); ctx.translate(x, y); drawJavelin(ctx, S, t); ctx.restore();
     }
-    if (game.namePos) {
-      const { x, y } = this.hexToScreen(game.namePos);
-      ctx.save(); ctx.translate(x, y); drawName(ctx, S, t); ctx.restore();
+    if (game.kleosPos) {
+      const { x, y } = this.hexToScreen(game.kleosPos);
+      ctx.save(); ctx.translate(x, y); drawKleos(ctx, S, t); ctx.restore();
     }
-    for (const g of game.gourds) {
+    for (const g of game.pitchJars) {
       const { x, y } = this.hexToScreen(g.pos);
-      ctx.save(); ctx.translate(x, y); drawGourd(ctx, S * 0.8, { x: 0, y: 0 }, t); ctx.restore();
+      ctx.save(); ctx.translate(x, y); drawPitchJar(ctx, S * 0.8, { x: 0, y: 0 }, t); ctx.restore();
     }
   }
 
   drawEntities(t, dt) {
     const { ctx, game } = this;
     const S = this.hex;
-    for (const y of game.yokai) {
+    for (const y of game.foes) {
       const target = this.hexToScreen(y.pos);
       const s = this.smoothPos(y.id, target, dt);
       // grounding shadow
@@ -369,12 +410,12 @@ export class Renderer {
       ctx.fill();
       ctx.save();
       ctx.translate(s.x, s.y);
-      if (y.isBoss) drawGashadokuro(ctx, S, y, t);
-      else drawYokai(ctx, S * 0.9, y, t);
+      if (y.isBoss) drawAres(ctx, S, y, t);
+      else drawFoe(ctx, S * 0.9, y, t);
       ctx.restore();
       if (y.isBoss) {
         // Ares' open wound: a glowing gash Athena made visible
-        const v = this.hexToScreen(y.vulnTile());
+        const v = this.hexToScreen(y.openWoundTile());
         this.hexPath(v.x, v.y, S * 0.7);
         ctx.strokeStyle = `rgba(255,80,50,${0.55 + 0.35 * Math.sin(t / 200)})`;
         ctx.lineWidth = 2;
@@ -397,7 +438,7 @@ export class Renderer {
     ctx.fill();
     ctx.save();
     ctx.translate(ps.x, ps.y);
-    drawRonin(ctx, S * 0.95, game.player, t);
+    drawPlayer(ctx, S * 0.95, game.player, t);
     ctx.restore();
   }
 
@@ -466,7 +507,7 @@ export class Renderer {
       }
       // Boss: also pulse the open wound while inspecting.
       if (threatFoe?.isBoss) {
-        const v = this.hexToScreen(threatFoe.vulnTile());
+        const v = this.hexToScreen(threatFoe.openWoundTile());
         this.hexPath(v.x, v.y, S * 0.75);
         ctx.strokeStyle = 'rgba(255,200,80,0.95)';
         ctx.lineWidth = 2.5;
@@ -475,9 +516,9 @@ export class Renderer {
       return;
     }
 
-    // Feature labels: arrow (gate), Athena statue, fire / planks on fire
+    // Feature labels: arrow (exitMap), Athena statue, fire / planks on fire
     if (featureLabel) {
-      const isFire = featureLabel.startsWith('Fire') || featureLabel.startsWith('Planks');
+      const isFire = featureLabel.startsWith('Burning') || featureLabel.startsWith('Smoldering');
       const isMap = featureLabel.startsWith('Map');
       this.hexPath(x, y, S * 0.98);
       ctx.strokeStyle = isFire ? 'rgba(255,140,40,0.85)'
@@ -494,16 +535,22 @@ export class Renderer {
     }
 
     if (preview && preview.ok) {
+      const isThrow = preview.kind === 'throw';
+      const isLeap = preview.kind === 'leap';
       this.hexPath(x, y);
-      ctx.strokeStyle = preview.kind === 'leap' ? 'rgba(159,216,232,0.95)' : 'rgba(238,213,140,0.95)';
+      ctx.strokeStyle = isThrow ? 'rgba(208,71,47,0.95)'
+        : isLeap ? 'rgba(159,216,232,0.95)'
+        : 'rgba(238,213,140,0.95)';
       ctx.lineWidth = 2.5;
       ctx.stroke();
-      ctx.fillStyle = preview.kind === 'leap'
-        ? 'rgba(159,216,232,0.16)'
+      ctx.fillStyle = isThrow ? 'rgba(208,71,47,0.18)'
+        : isLeap ? 'rgba(159,216,232,0.16)'
         : 'rgba(238,213,140,0.14)';
       ctx.fill();
       for (const victim of preview.kills || []) {
-        const v = this.hexToScreen(victim.pos);
+        // Boss / multi-tile: mark the hovered tile for throws; else entity pos.
+        const mark = isThrow ? hex : victim.pos;
+        const v = this.hexToScreen(mark);
         this.hexPath(v.x, v.y, S * 0.82);
         ctx.fillStyle = 'rgba(208,71,47,0.2)';
         ctx.fill();
@@ -520,6 +567,18 @@ export class Renderer {
         ctx.font = `${Math.max(9, S * 0.28)}px Georgia, serif`;
         ctx.fillText('SWEEP', x - S * 0.45, y - S * 0.75);
       }
+      if (isThrow) {
+        this.drawHoverLabel(x, y, S, 'Javelin', {
+          accent: 'rgba(208,71,47,0.55)',
+          lift: 1.2,
+        });
+      }
+    } else if (this.mode === 'throw') {
+      // Out-of-range or empty tile while aiming the javelin.
+      this.hexPath(x, y);
+      ctx.strokeStyle = 'rgba(180,120,70,0.55)';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
     } else if (this.mode !== 'move') {
       this.hexPath(x, y);
       ctx.strokeStyle = 'rgba(238,213,140,0.85)';
@@ -558,7 +617,7 @@ export class Renderer {
           }
           break;
         }
-        case 'iai': {
+        case 'spear-sweep': {
           const { x, y } = this.hexToScreen(f.pos);
           const base = (f.dir ?? 0) * -Math.PI / 3;
           ctx.strokeStyle = `rgba(243,239,225,${fade})`;
@@ -575,7 +634,7 @@ export class Renderer {
         }
         case 'shot': case 'melee': {
           const a = this.hexToScreen(f.from), b = this.hexToScreen(f.to);
-          ctx.strokeStyle = f.deflected
+          ctx.strokeStyle = f.guarded
             ? `rgba(159,216,232,${fade})`
             : `rgba(240,230,200,${fade})`;
           ctx.lineWidth = 1.6;
@@ -616,14 +675,14 @@ export class Renderer {
           ctx.fillText(f.text || '-1', x + 10, y - S * 0.6 - p * 18);
           break;
         }
-        case 'stagger': case 'bow': {
+        case 'stagger': case 'libation': {
           const { x, y } = this.hexToScreen(f.pos);
           ctx.fillStyle = `rgba(238,213,140,${fade})`;
           ctx.font = '12px Georgia, serif';
-          ctx.fillText(f.type === 'bow' ? 'σκ' : '✶', x - 6, y - S * 0.8 - p * 10);
+          ctx.fillText(f.type === 'libation' ? 'σκ' : '✶', x - 6, y - S * 0.8 - p * 10);
           break;
         }
-        case 'zanshin': case 'boon': case 'pickup': case 'name-drop': {
+        case 'aristeia-boon': case 'boon': case 'pickup': case 'kleos-drop': {
           const { x, y } = this.hexToScreen(f.pos);
           ctx.strokeStyle = `rgba(238,213,140,${fade})`;
           ctx.lineWidth = 2;

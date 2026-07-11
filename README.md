@@ -1,4 +1,4 @@
-# Aristeia: Rage of Diomedes
+# Aristeia: The Day of Diomedes
 
 A turn-based hex-grid roguelike inspired by Hoplite, re-imagined around Diomedes'
 day of glory on the Trojan plain. Character tokens, terrain tiles, and the title screen
@@ -7,12 +7,10 @@ Full design rationale in [DESIGN.md](DESIGN.md).
 
 ## Premise
 
-You are Diomedes of Argos. Your *kleos* — the glory that is your name — has been
-torn from you and kept by Ares himself. Descend through eight ranks of the Trojan
-host, wound the war god at his open joint, take your kleos back, and flee for the
-ships as pursuit troops pour after you.
-
-Athena steadies your spear. The plain is deterministic. Every death is a misread.
+Athena sets fire around Diomedes' helm and lifts the mortal mist from his eyes.
+Break through eight Trojan lines, wound Ares where Athena reveals the opening,
+reclaim your *kleos*, and fight back to the ships. Most foes fall in one strike;
+Diomedes' resolve permits few mistakes.
 
 ## Run
 
@@ -25,7 +23,7 @@ python3 -m http.server 8000
 
 ## Test
 
-The rules engine is DOM-free and fully unit-tested:
+The rules engine is DOM-free and covered by unit tests:
 
 ```sh
 node tests/run-tests.mjs
@@ -45,8 +43,8 @@ node tests/run-tests.mjs
 | `js/ai.js` | foe attack & movement phases |
 | `js/sprites.js` | all procedural canvas art |
 | `js/render.js` | board renderer + FX (reads game, never mutates) |
-| `js/ui.js` | side panel, altar modal, end overlay |
-| `js/main.js` | wiring, input, `window.YOMI` debug hook |
+| `js/ui.js` | side panel, Athena statue modal, end overlay |
+| `js/main.js` | wiring, input, `window.ARISTEIA` debug hook |
 
 Logic modules (`hex`→`ai`) never touch the DOM, so they run under Node for tests and bots.
 
@@ -56,27 +54,27 @@ Works with mouse or touch. Mouse: hover previews a move (gold outline, vermillio
 anything it would kill), click commits. Touch: tap once to preview, tap again to commit;
 the layout reflows for portrait phones.
 
-Click/tap to walk; 2 tiles away for Athena's leap (50 menos). Moving **past** a foe cuts
+Choose a space to walk; 2 spaces away for Athena's leap (50 menos). Moving **past** a foe cuts
 it; moving **straight at** one thrusts. Your first strike from a **grounded spear** is a
 sweeping arc — grounding the spear (S) staggers everything adjacent. Click adjacent foes
 to shield-bash (30 menos); pour a libation (O) to ford guards; raise your aspis (D)
-to turn arrows and god-light home. Sacrifice at Athena's altars — the strongest blessings
-cost portions of kleos. Wound Ares on rank 8 by striking his glowing open wound, take
+to turn arrows and god-light home. Seek blessings beside Athena's images; some cost one
+measure of kleos and 1 max resolve. At the eighth line, strike the opening Athena lights, take
 your kleos, and survive the flight back to the ships.
 
 ## Cast
 
 | Foe | Role |
 |---|---|
-| **Trojan Elite** | Heavy infantry; enrages if bashed and not killed |
-| **Trojan Archer** | Line archer; shoots along hex axes, range 2–5 |
-| **Elite Marksman** | Silver volley beam; freezes Scamander shallows into ice bridges |
-| **Trojan Sapper** | Lobs sparking pitch-jars |
-| **Trojan Scout** | Light elite; leaps 2 tiles when charged |
-| **Ford Guard** | River infantry; swims water; answer a libation and he loses footing |
-| **Pursuit Troop** | Flight only — chasing infantry |
-| **Ares** | Rank-8 boss; strike the rotating open wound |
+| **Trojan Spearman** | Heavy infantry; enrages if bashed and not killed |
+| **Trojan Archer** | Shoots in straight lines, range 2–5 |
+| **Silver Marksman** | Silver volley; freezes Scamander shallows into ice bridges |
+| **Pitch-Bearer** | Lobs sparking pitch-jars |
+| **Trojan Skirmisher** | Leaps 2 spaces when charged |
+| **Scamander Guard** | Swims water; a libation makes him lose his footing |
+| **Pursuing Spearman** | Appears during the return to the ships |
+| **Ares** | At the eighth line; Athena's light reveals the opening to wound him |
 
 ## Debug hook
 
-`window.YOMI` exposes `game`, `act`, `chooseBoon`, `clickHex`, `newRun`, `setMode`.
+`window.ARISTEIA` exposes `game`, `act`, `chooseBoon`, `clickHex`, `newRun`, `setMode`.

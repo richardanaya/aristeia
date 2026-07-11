@@ -5,9 +5,9 @@ import { DIRS, add, eq, dist, neighbors, dirBetween, between, key } from './hex.
 import { T } from './board.js';
 
 export function runAttackPhase(game, events) {
-  for (const y of [...game.yokai]) {
+  for (const y of [...game.foes]) {
     if (y.staggered > 0) continue;
-    if (!game.yokai.includes(y)) continue; // died to a deflection earlier this phase
+    if (!game.foes.includes(y)) continue; // died to a reflected shot earlier this phase
     const attacked = tryAttack(game, y, events);
     if (attacked) y.acted = true;
     if (game.over) return;
@@ -15,10 +15,10 @@ export function runAttackPhase(game, events) {
 }
 
 export function runMovePhase(game, events) {
-  for (const y of [...game.yokai]) {
+  for (const y of [...game.foes]) {
     if (y.staggered > 0 || y.acted) continue;
-    if (!game.yokai.includes(y)) continue;
-    moveYokai(game, y, events);
+    if (!game.foes.includes(y)) continue;
+    moveFoe(game, y, events);
   }
 }
 
@@ -27,28 +27,28 @@ export function runMovePhase(game, events) {
 function tryAttack(game, y, events) {
   const p = game.player;
   switch (y.kind) {
-    case 'oni': case 'tengu': case 'kappa': case 'shikome': {
+    case 'elite': case 'scout': case 'fordGuard': case 'pursuitTroop': {
       if (dist(y.pos, p.pos) !== 1) return false;
       game.hurtPlayer(events, `The ${y.data.name.toLowerCase()} strikes you.`);
       events.push({ type: 'melee', from: y.pos, to: p.pos });
-      if (y.kind === 'oni') y.enraged = false; // rage is spent on the blow
+      if (y.kind === 'elite') y.enraged = false; // rage is spent on the blow
       return true;
     }
     case 'archer': return tryShoot(game, y, events);
-    case 'yukionna': return tryBeam(game, y, events);
-    case 'tanuki': return tryBomb(game, y, events);
-    case 'gashadokuro': return tryBossAttack(game, y, events);
+    case 'marksman': return tryBeam(game, y, events);
+    case 'sapper': return tryBomb(game, y, events);
+    case 'ares': return tryBossAttack(game, y, events);
     default: return false;
   }
 }
 
-function clearLine(game, from, to, { blockYokai = true } = {}) {
+function clearLine(game, from, to, { blockFoe = true } = {}) {
   const db = dirBetween(from, to);
   if (!db) return null;
   for (const h of between(from, to)) {
     if (game.board.blocksShots(h)) return null;
-    if (game.shrinePos && eq(game.shrinePos, h)) return null;
-    if (blockYokai && game.yokaiAt(h)) return null;
+    if (game.athenaStatuePos && eq(game.athenaStatuePos, h)) return null;
+    if (blockFoe && game.foeAt(h)) return null;
   }
   return db;
 }
@@ -58,9 +58,9 @@ function tryShoot(game, y, events) {
   const d = dist(y.pos, p.pos);
   if (d < y.data.shotMin || d > y.data.shotMax) return false;
   if (!clearLine(game, y.pos, p.pos)) return false;
-  if (p.deflecting) {
-    events.push({ type: 'shot', from: y.pos, to: p.pos, deflected: true });
-    game.killYokai(y, events, 'deflect');
+  if (p.guarding) {
+    events.push({ type: 'shot', from: y.pos, to: p.pos, guarded: true });
+    game.killFoe(y, events, 'guard');
     game.say('You turn the arrow on the aspis and send it home.');
   } else {
     events.push({ type: 'shot', from: y.pos, to: p.pos });
@@ -81,15 +81,15 @@ function tryBeam(game, y, events) {
   for (let i = 1; i <= y.data.beamRange; i++) {
     const h = add(y.pos, { q: DIRS[db.dir].q * i, r: DIRS[db.dir].r * i });
     if (!game.board.has(h) || game.board.blocksShots(h)) break;
-    if (game.shrinePos && eq(game.shrinePos, h)) break;
-    if (game.yokaiAt(h)) return false;
+    if (game.athenaStatuePos && eq(game.athenaStatuePos, h)) break;
+    if (game.foeAt(h)) return false;
     path.push(h);
   }
   if (!path.some((h) => eq(h, p.pos))) return false;
 
-  if (p.deflecting) {
-    events.push({ type: 'beam', from: y.pos, path, deflected: true });
-    game.killYokai(y, events, 'deflect');
+  if (p.guarding) {
+    events.push({ type: 'beam', from: y.pos, path, guarded: true });
+    game.killFoe(y, events, 'guard');
     game.say('You turn the volley back on its marksman.');
     return true;
   }
@@ -111,7 +111,7 @@ function tryBomb(game, y, events) {
     && !game.occupied(h) && !eq(h, p.pos));
   if (spots.length === 0) return false;
   const spot = game.rng.pick(spots);
-  game.gourds.push({ pos: spot, fuse: 1 });
+  game.pitchJars.push({ pos: spot, fuse: 1 });
   y.cooldown = y.data.bombCooldown;
   events.push({ type: 'lob', from: y.pos, to: spot });
   game.say('A sapper lobs a sparking pitch-jar at your feet.');
@@ -131,9 +131,9 @@ function tryBossAttack(game, y, events) {
 
 // ---- movement ------------------------------------------------------------------
 
-function moveYokai(game, y, events) {
-  if (y.kind === 'gashadokuro') return moveBoss(game, y, events);
-  if (y.kind === 'kappa') {
+function moveFoe(game, y, events) {
+  if (y.kind === 'ares') return moveBoss(game, y, events);
+  if (y.kind === 'fordGuard') {
     const onLand = game.board.terrain(y.pos) !== T.WATER;
     if (onLand) {
       y.landPause = !y.landPause;
@@ -143,22 +143,22 @@ function moveYokai(game, y, events) {
     }
   }
 
-  const steps = (y.kind === 'oni' && y.enraged) ? 2 : 1;
+  const steps = (y.kind === 'elite' && y.enraged) ? 2 : 1;
   for (let s = 0; s < steps; s++) {
     const to = pickStep(game, y);
     if (!to) break;
     const from = y.pos;
     y.pos = to;
-    events.push({ type: 'ymove', id: y.id, from, to });
+    events.push({ type: 'foe-move', id: y.id, from, to });
     if (dist(y.pos, game.player.pos) === 1) break; // in reach: stop and menace
   }
 
   // Scout leap: covers the gaps you thought were safe.
-  if (y.kind === 'tengu' && y.charge >= y.data.leapCharge) {
+  if (y.kind === 'scout' && y.charge >= y.data.leapCharge) {
     const d = dist(y.pos, game.player.pos);
     if (d >= 2 && d <= 4) {
       const spots = ringTiles(y.pos, 2).filter((h) =>
-        game.board.has(h) && game.board.yokaiWalkable(h)
+        game.board.has(h) && game.board.foeWalkable(h)
         && !game.occupied(h) && !eq(h, game.player.pos)
         && dist(h, game.player.pos) < d);
       if (spots.length) {
@@ -166,7 +166,7 @@ function moveYokai(game, y, events) {
         const from = y.pos;
         y.pos = to;
         y.charge = 0;
-        events.push({ type: 'yleap', id: y.id, from, to });
+        events.push({ type: 'foe-leap', id: y.id, from, to });
       }
     }
   }
@@ -196,16 +196,16 @@ function bestBy(arr, score, rng) {
 // One chase/reposition step for a normal foe.
 function pickStep(game, y) {
   const p = game.player;
-  const pass = (h) => game.board.yokaiWalkable(h, y.kind);
+  const pass = (h) => game.board.foeWalkable(h, y.kind);
   const field = game.board.distanceField(p.pos, pass);
   const here = field.get(key(y.pos));
   const options = neighbors(y.pos).filter((h) =>
     game.board.has(h) && pass(h) && !game.occupied(h) && !eq(h, p.pos));
   if (options.length === 0) return null;
 
-  const ranged = y.kind === 'archer' || y.kind === 'yukionna' || y.kind === 'tanuki';
+  const ranged = y.kind === 'archer' || y.kind === 'marksman' || y.kind === 'sapper';
   if (!ranged) {
-    // Melee: strictly close the distance (BFS respects lakes and chasms).
+    // Melee: strictly close the distance (BFS respects lakes and burningPlankFields).
     const closer = options.filter((h) => (field.get(key(h)) ?? Infinity) < (here ?? Infinity));
     return closer.length ? bestBy(closer, (h) => field.get(key(h)), game.rng) : null;
   }
@@ -227,7 +227,7 @@ function pickStep(game, y) {
 
 function moveBoss(game, y, events) {
   const p = game.player;
-  y.rotateJoint(); // the open wound crawls clockwise, always
+  y.rotateOpenWound(); // the open wound crawls clockwise, always
   if (y.tiles().some((t) => dist(t, p.pos) <= 1)) return; // already looming
   const options = neighbors(y.pos).filter((c) => {
     const foot = [c, ...neighbors(c)];
@@ -236,10 +236,10 @@ function moveBoss(game, y, events) {
       const t = game.board.terrain(h);
       if (t !== T.GROUND && t !== T.ICE) return false;
       if (eq(h, p.pos)) return false;
-      const other = game.yokaiAt(h);
+      const other = game.foeAt(h);
       if (other && other !== y) return false;
-      if (game.shrinePos && eq(game.shrinePos, h)) return false;
-      if (game.gatePos && eq(game.gatePos, h)) return false;
+      if (game.athenaStatuePos && eq(game.athenaStatuePos, h)) return false;
+      if (game.exitMapPos && eq(game.exitMapPos, h)) return false;
       return true;
     });
   });
@@ -248,5 +248,5 @@ function moveBoss(game, y, events) {
   if (dist(to, p.pos) >= dist(y.pos, p.pos)) return;
   const from = y.pos;
   y.pos = to;
-  events.push({ type: 'ymove', id: y.id, from, to });
+  events.push({ type: 'foe-move', id: y.id, from, to });
 }

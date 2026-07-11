@@ -1,36 +1,36 @@
-// Procedural layer generation. Guarantees a walkable path start -> gate
+// Procedural rank generation. Guarantees a walkable path start -> exitMap
 // and start -> altar before accepting a layout.
 
 import { key, eq, dist, neighbors, range } from './hex.js';
 import { Board, T } from './board.js';
-import { Yokai, Gashadokuro } from './entities.js';
+import { Foe, Ares } from './entities.js';
 
 export const RADIUS = 4;
-export const MAX_LAYER = 8;
+export const MAX_RANK = 8;
 
-export function generateLayer(rng, index, mode) {
+export function generateRank(rng, index, mode) {
   for (let attempt = 0; attempt < 40; attempt++) {
     const gen = tryGenerate(rng, index, mode);
     if (gen) return gen;
   }
-  return fallbackLayer(rng, index, mode);
+  return fallbackRank(rng, index, mode);
 }
 
 function tryGenerate(rng, index, mode) {
   const board = Board.hexagon(RADIUS);
-  const isBossLayer = mode === 'descent' && index === MAX_LAYER;
+  const isBossRank = mode === 'descent' && index === MAX_RANK;
   const all = [...board.coords()];
 
   const start = rng.pick(all.filter((h) => h.r >= RADIUS - 1));
-  const gate = rng.pick(all.filter((h) => h.r <= -(RADIUS - 1) && dist(h, start) >= 6));
-  const shrine = rng.pick(all.filter((h) =>
-    Math.abs(h.r) <= 2 && !eq(h, start) && !eq(h, gate)
-    && dist(h, start) >= 2 && dist(h, gate) >= 2));
-  if (!start || !gate || !shrine) return null;
+  const exitMap = rng.pick(all.filter((h) => h.r <= -(RADIUS - 1) && dist(h, start) >= 6));
+  const athenaStatue = rng.pick(all.filter((h) =>
+    Math.abs(h.r) <= 2 && !eq(h, start) && !eq(h, exitMap)
+    && dist(h, start) >= 2 && dist(h, exitMap) >= 2));
+  if (!start || !exitMap || !athenaStatue) return null;
 
-  const protectedTiles = new Set([key(start), key(gate), key(shrine),
-    ...neighbors(shrine).map(key), ...neighbors(gate).map(key), ...neighbors(start).map(key)]);
-  if (isBossLayer) {
+  const protectedTiles = new Set([key(start), key(exitMap), key(athenaStatue),
+    ...neighbors(athenaStatue).map(key), ...neighbors(exitMap).map(key), ...neighbors(start).map(key)]);
+  if (isBossRank) {
     for (const h of range({ q: 0, r: 0 }, 2)) protectedTiles.add(key(h));
   }
   const carvable = all.filter((h) => !protectedTiles.has(key(h)));
@@ -45,28 +45,28 @@ function tryGenerate(rng, index, mode) {
     }
   };
 
-  const chasms = 2 + rng.int(2);
-  for (let i = 0; i < chasms; i++) blob(T.CHASM, 2 + rng.int(3));
-  if (index >= 2 && !isBossLayer) blob(T.WATER, 3 + rng.int(4));
+  const burningPlankFields = 2 + rng.int(2);
+  for (let i = 0; i < burningPlankFields; i++) blob(T.BURNING_PLANKS, 2 + rng.int(3));
+  if (index >= 2 && !isBossRank) blob(T.WATER, 3 + rng.int(4));
   if (index >= 3) {
     for (let i = 0, n = rng.int(3); i < n; i++) blob(T.FIRE, 1);
   }
-  for (let i = 0, n = 2 + rng.int(3); i < n; i++) blob(T.GRAVE, 1);
+  for (let i = 0, n = 2 + rng.int(3); i < n; i++) blob(T.STELE, 1);
 
   // Validate connectivity for Diomedes (fire counts as passable-at-a-cost).
-  const field = board.distanceField(start, (h) => board.walkable(h) && !eq(h, shrine));
-  if (!field.has(key(gate))) return null;
-  if (!neighbors(shrine).some((n) => field.has(key(n)))) return null;
+  const field = board.distanceField(start, (h) => board.walkable(h) && !eq(h, athenaStatue));
+  if (!field.has(key(exitMap))) return null;
+  if (!neighbors(athenaStatue).some((n) => field.has(key(n)))) return null;
 
-  const yokai = spawnYokai(rng, board, index, mode, { start, gate, shrine, isBossLayer });
-  return { board, start, gate, shrine, yokai };
+  const foes = spawnFoe(rng, board, index, mode, { start, exitMap, athenaStatue, isBossRank });
+  return { board, start, exitMap, athenaStatue, foes };
 }
 
-function spawnYokai(rng, board, index, mode, { start, gate, shrine, isBossLayer }) {
-  const yokai = [];
-  const taken = new Set([key(start), key(gate), key(shrine)]);
+function spawnFoe(rng, board, index, mode, { start, exitMap, athenaStatue, isBossRank }) {
+  const foes = [];
+  const taken = new Set([key(start), key(exitMap), key(athenaStatue)]);
   const openTiles = [...board.coords()].filter((h) =>
-    board.yokaiWalkable(h) && dist(h, start) >= 3 && !taken.has(key(h)));
+    board.foeWalkable(h) && dist(h, start) >= 3 && !taken.has(key(h)));
   const waterTiles = [...board.coords()].filter((h) => board.terrain(h) === T.WATER);
 
   const place = (kind, tiles) => {
@@ -74,37 +74,37 @@ function spawnYokai(rng, board, index, mode, { start, gate, shrine, isBossLayer 
     if (!spots.length) return;
     const h = rng.pick(spots);
     taken.add(key(h));
-    yokai.push(new Yokai(kind, h));
+    foes.push(new Foe(kind, h));
   };
 
-  if (isBossLayer) {
-    const boss = new Gashadokuro({ q: 0, r: 0 });
+  if (isBossRank) {
+    const boss = new Ares({ q: 0, r: 0 });
     for (const t of boss.tiles()) taken.add(key(t));
-    yokai.push(boss);
-    for (let i = 0; i < 3; i++) place(rng.pick(['oni', 'archer']), openTiles);
-    return yokai;
+    foes.push(boss);
+    for (let i = 0; i < 3; i++) place(rng.pick(['elite', 'archer']), openTiles);
+    return foes;
   }
 
-  const pool = ['oni'];
+  const pool = ['elite'];
   if (index >= 1) pool.push('archer');
-  if (index >= 3) pool.push('yukionna');
-  if (index >= 4) pool.push('tanuki');
-  if (index >= 5) pool.push('tengu');
+  if (index >= 3) pool.push('marksman');
+  if (index >= 4) pool.push('sapper');
+  if (index >= 5) pool.push('scout');
 
   const count = Math.min(2 + index, 9) - (mode === 'flight' ? 2 : 0);
   for (let i = 0; i < count; i++) place(rng.pick(pool), openTiles);
-  if (index >= 2 && waterTiles.length) place('kappa', waterTiles);
-  return yokai;
+  if (index >= 2 && waterTiles.length) place('fordGuard', waterTiles);
+  return foes;
 }
 
-function fallbackLayer(rng, index, mode) {
+function fallbackRank(rng, index, mode) {
   // Ultra-safe layout: bare ground, guaranteed valid.
   const board = Board.hexagon(RADIUS);
   const start = { q: 0, r: RADIUS };
-  const gate = { q: 0, r: -RADIUS };
-  const shrine = { q: 2, r: 0 };
-  const yokai = spawnYokai(rng, board, index, mode, {
-    start, gate, shrine, isBossLayer: mode === 'descent' && index === MAX_LAYER,
+  const exitMap = { q: 0, r: -RADIUS };
+  const athenaStatue = { q: 2, r: 0 };
+  const foes = spawnFoe(rng, board, index, mode, {
+    start, exitMap, athenaStatue, isBossRank: mode === 'descent' && index === MAX_RANK,
   });
-  return { board, start, gate, shrine, yokai };
+  return { board, start, exitMap, athenaStatue, foes };
 }

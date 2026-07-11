@@ -3,27 +3,27 @@
 
 const SPRITE_PATHS = {
   player: 'assets/sprites/diomedes.png',
-  oni: 'assets/sprites/oni.png',
+  elite: 'assets/sprites/elite.png',
   archer: 'assets/sprites/archer.png',
-  yukionna: 'assets/sprites/yukionna.png',
-  tanuki: 'assets/sprites/tanuki.png',
-  tengu: 'assets/sprites/tengu.png',
-  kappa: 'assets/sprites/kappa.png',
-  shikome: 'assets/sprites/shikome.png',
-  gashadokuro: 'assets/sprites/gashadokuro.png',
-  gate_down: 'assets/sprites/gate_down.png',
-  gate_up: 'assets/sprites/gate_up.png',
-  shrine: 'assets/sprites/shrine.png',
+  marksman: 'assets/sprites/marksman.png',
+  sapper: 'assets/sprites/sapper.png',
+  scout: 'assets/sprites/scout.png',
+  fordGuard: 'assets/sprites/fordGuard.png',
+  pursuitTroop: 'assets/sprites/pursuitTroop.png',
+  ares: 'assets/sprites/ares.png',
+  exitMap_down: 'assets/sprites/exitMap_down.png',
+  exitMap_up: 'assets/sprites/exitMap_up.png',
+  athenaStatue: 'assets/sprites/athenaStatue.png',
 };
 
 // Terrain textures keyed by board T.* values.
 const TILE_PATHS = {
   ground: 'assets/tiles/ground.jpg',
-  chasm: 'assets/tiles/chasm.jpg',
+  'burning-planks': 'assets/tiles/burning-planks.jpg',
   water: 'assets/tiles/water.jpg',
   ice: 'assets/tiles/ice.jpg',
   fire: 'assets/tiles/fire.jpg',
-  grave: 'assets/tiles/grave.jpg',
+  stele: 'assets/tiles/stele.jpg',
 };
 
 const BG_PATHS = {
